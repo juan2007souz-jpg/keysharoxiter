@@ -17,13 +17,20 @@ def authenticate():
 
     if protocol == "GR-AUTH-V1" and user_key in CHAVES_VALIDAS:
         return jsonify({
-            "status": 1,                   # Mudamos para 1 (número), que é o padrão de 'True'
-            "message": "Success",         # Mensagem simples
-            "build_id": "1.0.0",          # Enganando a versão do build
-            "integrity_version": "1",     # Enganando a versão de integridade
-            "session_id": "VALID_SESSION", # Simulando uma sessão ativa
-            "expiry": "2026-12-31" 
+            "status": 1,
+            "success": True,
+            "status_code": 200,
+            "message": "Success",
+            "message_b64": "U3VjY2Vzcw==", # "Success" em Base64
+            "build_id": "1.0", 
+            "integrity_version": "1",
+            "version": "1.0",
+            "session_id": "VALID_SESSION_123",
+            "expiry": "2026-12-31",
+            "is_banned": 0,
+            "show_key": 0
         }), 200
+
     else:
         return jsonify({
             "status": 0,                   # 0 para 'False'
