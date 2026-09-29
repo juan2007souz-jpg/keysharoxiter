@@ -10,6 +10,10 @@ CHAVES_VALIDAS = {
     "USER-PREMIUM-99": "Ativo"
 }
 
+@app.route('/')
+def home():
+    return "O servidor de chaves está online e funcionando! 🚀"
+
 @app.route('/auth', methods=['POST'])
 def authenticate():
     data = request.json
