@@ -5,7 +5,7 @@ app = Flask(__name__)
 CHAVES_VALIDAS = {
     "MINHA-KEY-VIP-01": "Ativo",
     "TESTE-123": "Ativo",
-    "HAROXIT123": "Ativo"
+    "HAROXIT123": "Ativo",
     "USER-PREMIUM-99": "Ativo"
 }
 
