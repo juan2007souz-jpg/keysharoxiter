@@ -14,7 +14,7 @@ CHAVES_VALIDAS = {
 def home():
     return "O servidor de chaves está online e funcionando! 🚀"
 
-@app.route('/auth', methods=['POST'])
+@app.route('/auth', methods=['GET', 'POST'])
 def authenticate():
     data = request.json
     user_key = data.get("key")
