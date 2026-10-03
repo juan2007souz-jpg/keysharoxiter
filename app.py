@@ -1,48 +1,56 @@
 from flask import Flask, request, Response
+import base64
 
 app = Flask(__name__)
 
-# Suas keys de venda
-CHAVES_VALIDAS = {
-    "MINHA-KEY-VIP-01": "Ativo",
-    "TESTE-123": "Ativo",
-    "HAROXIT123": "Ativo",
-    "USER-PREMIUM-99": "Ativo"
+# --- BANCO DE DADOS DE KEYS (Onde você controla quem entra) ---
+# Formato: "KEY": "STATUS"
+CHAVES_VIP = {
+    "VIP-2026-SENSACIONAL": "Ativo",
+    "HAROXIT-PREMIUM": "Ativo",
+    "TESTE-GRATIS-01": "Ativo"
 }
 
-@app.route('/auth', methods=['POST'])
+@app.route('/auth', methods=['POST', 'GET'])
 def authenticate():
-    data = request.json
-    user_key = data.get("key")
-    protocol = data.get("protocol")
-    device_id = data.get("device_id", "unknown")
-
-    # Verificação de protocolo e chave
-    if protocol == "GR-AUTH-V1" and user_key in CHAVES_VALIDAS:
-        # IMPORTANTE: O Mod Menu espera este formato de texto, não um JSON comum.
-        # Note que status=1 e is_banned=0 são os gatilhos para abrir o menu.
-        response_text = (
+    # Captura a key enviada pelo mod menu
+    # O menu pode enviar via JSON (POST) ou via URL (GET)
+    user_key = request.args.get('key') or (request.json.get('key') if request.is_json else None)
+    device_id = request.args.get('device_id') or (request.json.get('device_id') if request.is_json else "unknown_device")
+    
+    # 1. Verificamos se a key está na nossa lista VIP
+    if user_key in CHAVES_VIP:
+        # MENSAGEM DE BOAS-VINDAS (Em Base64 para o app não crashar)
+        # Texto: "Acesso Concedido! Bem-vindo ao Menu VIP do [Seu Nome]"
+        welcome_msg = base64.b64encode(b"Acesso Concedido! Bem-vindo ao Menu VIP").decode('utf-8')
+        
+        # ESTA É A RESPOSTA MÁGICA QUE O .DYLIB ESPERA
+        # status=1 -> Abre o Menu
+        # is_banned=0 -> Não está banido
+        # showPannel=1 -> Mostra o painel de cheats
+        response_body = (
             f"GR-AUTH-V1\n"
             f"status=1\n"
-            f"message_b64=V2VsY29tZSB0byBWRVAgT3BlbCB8IFlvdSBBcmUgT24h\n" # "Welcome to VIP Open | You Are On!" em Base64
+            f"message_b64={welcome_msg}\n"
             f"device_id={device_id}\n"
             f"is_banned=0\n"
             f"showPannel=1\n"
             f"session_id=SESS_{device_id}\n"
-            f"expires_at=20261231"
+            f"expires_at=20300101" # Validade longa para o cliente não reclamar
         )
-        
-        # Retornamos como 'text/plain' para o app não se confundir com JSON
-        return Response(response_text, mimetype='text/plain'), 200
+        return Response(response_body, mimetype='text/plain'), 200
+    
     else:
-        # Resposta de erro no formato do protocolo
-        error_text = "GR-AUTH-V1\nstatus=0\nmessage_b64=S2V5IEludmFsaWQh" # "Key Invalid!" em Base64
-        return Response(error_text, mimetype='text/plain'), 401
+        # RESPOSTA DE ERRO
+        # status=0 -> Key Inválida ou Expirada
+        error_msg = base64.b64encode(b"Chave Invalida ou Expirada!").decode('utf-8')
+        response_body = f"GR-AUTH-V1\nstatus=0\nmessage_b64={error_msg}"
+        return Response(response_body, mimetype='text/plain'), 401
 
 @app.route('/')
 def home():
-    return "Servidor de Autenticação VIP Online! 🚀"
+    return "Servidor GR-AUTH V1 Online - Gestao de Licencas VIP 🚀"
 
 if __name__ == '__main__':
-    # Lembre-se de abrir a porta 5000 no seu firewall/ VPS
-    app.run(host='0.0.0.0', port=5000)
+    # Porta 80 é a padrão para sites (HTTP), use-a se estiver em VPS
+    app.run(host='0.0.0.0', port=80)
