@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, Response
 
 app = Flask(__name__)
 
+# Suas keys de venda
 CHAVES_VALIDAS = {
     "MINHA-KEY-VIP-01": "Ativo",
     "TESTE-123": "Ativo",
@@ -14,26 +15,34 @@ def authenticate():
     data = request.json
     user_key = data.get("key")
     protocol = data.get("protocol")
-    device_id = data.get("device_id") # O app envia isso, vamos capturar
+    device_id = data.get("device_id", "unknown")
 
+    # Verificação de protocolo e chave
     if protocol == "GR-AUTH-V1" and user_key in CHAVES_VALIDAS:
-        # Aqui simulamos a resposta de um painel profissional
-        return jsonify({
-            "status": 1, 
-            "message": "Welcome to Premium!",
-            "build_id": "1.0.0",           # Simula a versão correta
-            "integrity_version": "1",     # Simula integridade do app
-            "session_id": f"SESS_{device_id}", # Cria uma sessão falsa usando o ID do aparelho
-            "is_banned": 0,
-            "show_key": 0,
-            "expiry": "2026-12-31"
-        }), 200
+        # IMPORTANTE: O Mod Menu espera este formato de texto, não um JSON comum.
+        # Note que status=1 e is_banned=0 são os gatilhos para abrir o menu.
+        response_text = (
+            f"GR-AUTH-V1\n"
+            f"status=1\n"
+            f"message_b64=V2VsY29tZSB0byBWRVAgT3BlbCB8IFlvdSBBcmUgT24h\n" # "Welcome to VIP Open | You Are On!" em Base64
+            f"device_id={device_id}\n"
+            f"is_banned=0\n"
+            f"showPannel=1\n"
+            f"session_id=SESS_{device_id}\n"
+            f"expires_at=20261231"
+        )
+        
+        # Retornamos como 'text/plain' para o app não se confundir com JSON
+        return Response(response_text, mimetype='text/plain'), 200
     else:
-        return jsonify({"status": 0, "message": "Invalid Key!"}), 401
+        # Resposta de erro no formato do protocolo
+        error_text = "GR-AUTH-V1\nstatus=0\nmessage_b64=S2V5IEludmFsaWQh" # "Key Invalid!" em Base64
+        return Response(error_text, mimetype='text/plain'), 401
 
 @app.route('/')
 def home():
-    return "EmpireExits Clone Server Online! 🚀"
+    return "Servidor de Autenticação VIP Online! 🚀"
 
 if __name__ == '__main__':
+    # Lembre-se de abrir a porta 5000 no seu firewall/ VPS
     app.run(host='0.0.0.0', port=5000)
